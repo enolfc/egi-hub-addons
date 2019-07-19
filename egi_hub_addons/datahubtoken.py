@@ -4,6 +4,8 @@ EGI Check-in + datahub authenticator for JupyterHub
 Uses OpenID Connect with aai.egi.eu, fetches DataHub token 
 and keeps it in auth_data
 """
+from tornado import gen
+from tornado.httpclient import HTTPRequest, AsyncHTTPClient, HTTPError
 
 from oauthenticator.egicheckin import EGICheckinAuthenticator
 
@@ -12,6 +14,7 @@ class DataHubAuthenticator(EGICheckinAuthenticator):
     def authenticate(self, handler, data=None):
         user_data = yield super(DataHubAuthenticator,
                                 self).authenticate(handler, data)
+        http_client = AsyncHTTPClient()
         # We now go to the datahub to get a token
         req = HTTPRequest('https://datahub.egi.eu/api/v3/onezone/user/client_tokens',
                           headers={'content-type': 'application/json',
