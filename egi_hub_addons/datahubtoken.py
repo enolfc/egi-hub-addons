@@ -48,6 +48,7 @@ class DataHubAuthenticator(EGICheckinAuthenticator):
                 self.log.info("Something failed! %s", e)
                 raise e
         user_data['auth_state'].update({'onedata_token': onedata_token})
+        return user_data
 
     @gen.coroutine
     def pre_spawn_start(self, user, spawner):
