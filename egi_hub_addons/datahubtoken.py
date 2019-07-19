@@ -16,12 +16,12 @@ class DataHubAuthenticator(EGICheckinAuthenticator):
                                 self).authenticate(handler, data)
         self.log.error("SOMETHING: %s",  user_data)
         http_client = AsyncHTTPClient()
+        onedata_token = None
         # We now go to the datahub to get a token
         req = HTTPRequest('https://datahub.egi.eu/api/v3/onezone/user/client_tokens',
                           headers={'content-type': 'application/json',
                                    'x-auth-token': 'egi:%s' % user_data['auth_state']['access_token']},
-                          method='GET',
-                          body='')
+                          method='GET')
         try:
             resp = yield http_client.fetch(req)
             datahub_response = json.loads(resp.body.decode('utf8', 'replace'))
@@ -30,19 +30,20 @@ class DataHubAuthenticator(EGICheckinAuthenticator):
         except HTTPError as e:
             self.log.info("Something failed! %s", e)
             raise e
-        # we don't have a token, create one
-        req = HTTPRequest('https://datahub.egi.eu/api/v3/onezone/user/client_tokens',
-                          headers={'content-type': 'application/json',
-                                   'x-auth-token': 'egi:%s' % user_data['auth_state']['access_token']},
-                          method='GET',
-                          body='')
-        try:
-            resp = yield http_client.fetch(req)
-            datahub_response = json.loads(resp.body.decode('utf8', 'replace'))
-            onedata_token = datahub_response['token']
-        except HTTPError as e:
-            self.log.info("Something failed! %s", e)
-            raise e
+        if not onedata_token:
+            # we don't have a token, create one
+            req = HTTPRequest('https://datahub.egi.eu/api/v3/onezone/user/client_tokens',
+                              headers={'content-type': 'application/json',
+                                       'x-auth-token': 'egi:%s' % user_data['auth_state']['access_token']},
+                              method='POST',
+                              body='')
+            try:
+                resp = yield http_client.fetch(req)
+                datahub_response = json.loads(resp.body.decode('utf8', 'replace'))
+                onedata_token = datahub_response['token']
+            except HTTPError as e:
+                self.log.info("Something failed! %s", e)
+                raise e
         user_data['auth_state'].update({'onedata_token': onedata_token})
 
     @gen.coroutine
