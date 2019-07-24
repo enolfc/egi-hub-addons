@@ -38,14 +38,14 @@ class MixedContentsManager(ContentsManager):
                 'class': "onedatafs_jupyter.OnedataFSContentsManager",
                 'config': {
                     'space': u'/space1'
-                }, 
+                },
             },
             {
                 'root': 'space2',
                 'class': "onedatafs_jupyter.OnedataFSContentsManager",
                 'config': {
                     'space': u'/space2'
-                }, 
+                },
             }
         ],
         help="""List of virtual mount point name and corresponding contents manager""",
@@ -177,7 +177,7 @@ class MixedContentsManager(ContentsManager):
             root = {'type': 'directory',
                  'name': self.mixed_path,
                  'path': self.mixed_path,
-                 'content': [], 
+                 'content': [],
                  'last_modified': None,
                  'created': None,
                  'format': 'json',
@@ -187,12 +187,16 @@ class MixedContentsManager(ContentsManager):
                  'type': 'directory'}
             lm = []
             for subpath, manager in self.managers.items():
-                d = manager.get('/', **kwargs)
-                d['content'] = None
-                d['name'] = subpath
-                d['path'] = os.path.join(self.mixed_path, subpath)
-                root['content'].append(d) 
-                lm.append(d['last_modified'])
+                try:
+                    d = manager.get('/', **kwargs)
+                    d['content'] = None
+                    d['name'] = subpath
+                    d['path'] = os.path.join(self.mixed_path, subpath)
+                    root['content'].append(d)
+                    lm.append(d['last_modified'])
+                # TODO: have a better exception here
+                except:
+                    pass
             root['last_modified'] = max(lm)
             root['created'] = min(lm)
             return root
@@ -275,7 +279,7 @@ class MixedContentsManager(ContentsManager):
                 self.log.debug("AAAAAAAAAA")
                 self.log.debug("AAAAAAAAAA")
                 return self.fix_path(sentinel, sub)
-            else: 
+            else:
                 return rename_like_method(self, old_path, new_path)
         return _wrapper_method
 
