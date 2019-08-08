@@ -5,7 +5,8 @@ from tornado.httpclient import HTTPRequest, AsyncHTTPClient, HTTPError
 
 def datahub_pod_modifier(onezone_url='https://datahub.egi.eu',
                          oneprovider_host='plg-cyfronet-01.datahub.egi.eu',
-                         token_variable='DATAHUB_TOKEN'):
+                         manager_class='eginotebooks.manager.MixedContentsManager',
+                         token_variable='ONECLIENT_ACCESS_TOKEN'):
     @gen.coroutine
     def datahub_args(spawner, pod):
         spawner.log.info("*"* 80)
@@ -43,12 +44,12 @@ def datahub_pod_modifier(onezone_url='https://datahub.egi.eu',
                     raise e
             pod.spec.containers[0].args = (pod.spec.containers[0].args +
                 [
-                    '--NotebookApp.contents_manager_class=egi_hub_addons.manager.MixedContentsManager',
+                    '--NotebookApp.contents_manager_class=%s' % manager_class,
                     '--OnedataFSContentsManager.oneprovider_host=%s' % oneprovider_host,
                     '--OnedataFSContentsManager.access_token=$(%s)' % token_variable,
                     '--OnedataFSContentsManager.path=""',
-                    '--OnedataFSContentsManager.force_proxy_io=True',
-                    '--OnedataFSContentsManager.force_direct_io=False',
+                    '--OnedataFSContentsManager.force_proxy_io=False',
+                    '--OnedataFSContentsManager.force_direct_io=True',
                     '--MixedContentsManager.filesystem_scheme=%s' % json.dumps(scheme)
                 ]
             )
