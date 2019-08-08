@@ -1,7 +1,7 @@
 """
 EGI Check-in + datahub authenticator for JupyterHub
 
-Uses OpenID Connect with aai.egi.eu, fetches DataHub token 
+Uses OpenID Connect with aai.egi.eu, fetches DataHub token
 and keeps it in auth_state
 """
 
@@ -9,19 +9,26 @@ import json
 
 from tornado import gen
 from tornado.httpclient import HTTPRequest, AsyncHTTPClient, HTTPError
+from traitlets import Unicode
 
 from oauthenticator.egicheckin import EGICheckinAuthenticator
 
 class DataHubAuthenticator(EGICheckinAuthenticator):
+    onezone_url = Unicode(default_value='https://datahub.egi.eu',
+                          config=True,
+                          help="""Onedata onezone URL""")
+    oneprovider_host = Unicode(default_value='',
+                               config=True,
+                               help="""Onedata oneprovider hostname""")
+
     @gen.coroutine
     def authenticate(self, handler, data=None):
         user_data = yield super(DataHubAuthenticator,
                                 self).authenticate(handler, data)
-        self.log.error("SOMETHING: %s",  user_data)
         http_client = AsyncHTTPClient()
         onedata_token = None
         # We now go to the datahub to get a token
-        req = HTTPRequest('https://datahub.egi.eu/api/v3/onezone/user/client_tokens',
+        req = HTTPRequest(self.onezone_url + '/api/v3/onezone/user/client_tokens',
                           headers={'content-type': 'application/json',
                                    'x-auth-token': 'egi:%s' % user_data['auth_state']['access_token']},
                           method='GET')
@@ -35,7 +42,7 @@ class DataHubAuthenticator(EGICheckinAuthenticator):
             raise e
         if not onedata_token:
             # we don't have a token, create one
-            req = HTTPRequest('https://datahub.egi.eu/api/v3/onezone/user/client_tokens',
+            req = HTTPRequest(self.onezone_url + '/api/v3/onezone/user/client_tokens',
                               headers={'content-type': 'application/json',
                                        'x-auth-token': 'egi:%s' % user_data['auth_state']['access_token']},
                               method='POST',
@@ -57,4 +64,5 @@ class DataHubAuthenticator(EGICheckinAuthenticator):
         if not auth_state:
             # auth_state not enabled
             return
-        spawner.environment['DATAHUB_TOKEN'] = auth_state.get('onedata_token')
+        spawner.environment['ONECLIENT_ACCESS_TOKEN'] = auth_state.get('onedata_token')
+        spawner.environment['ONEPROVIDER_HOST'] = self.oneprovider_host
