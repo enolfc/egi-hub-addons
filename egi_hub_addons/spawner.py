@@ -6,12 +6,15 @@ from tornado.httpclient import HTTPRequest, AsyncHTTPClient, HTTPError
 def datahub_pod_modifier(onezone_url='https://datahub.egi.eu',
                          oneprovider_host='plg-cyfronet-01.datahub.egi.eu',
                          manager_class='eginotebooks.manager.MixedContentsManager',
-                         token_variable='ONECLIENT_ACCESS_TOKEN'):
+                         token_variable='ONECLIENT_ACCESS_TOKEN',
+                         force_proxy_io=False,
+                         force_direct_io=True):
     @gen.coroutine
     def datahub_args(spawner, pod):
         spawner.log.info("*"* 80)
         spawner.log.info("*"* 80)
         spawner.log.info("*"* 80)
+        # if coming via binder, this shouldn't be done
         if spawner.environment.get(token_variable, ''):
             http_client = AsyncHTTPClient()
             req = HTTPRequest(onezone_url + '/api/v3/onezone/user/effective_spaces',
@@ -48,8 +51,8 @@ def datahub_pod_modifier(onezone_url='https://datahub.egi.eu',
                     '--OnedataFSContentsManager.oneprovider_host=%s' % oneprovider_host,
                     '--OnedataFSContentsManager.access_token=$(%s)' % token_variable,
                     '--OnedataFSContentsManager.path=""',
-                    '--OnedataFSContentsManager.force_proxy_io=False',
-                    '--OnedataFSContentsManager.force_direct_io=True',
+                    '--OnedataFSContentsManager.force_proxy_io=%s' % force_proxy_io,
+                    '--OnedataFSContentsManager.force_direct_io=%s' % force_direct_io,
                     '--MixedContentsManager.filesystem_scheme=%s' % json.dumps(scheme)
                 ]
             )
